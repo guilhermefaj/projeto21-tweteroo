@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { Tweet } from './entities/tweet.entity';
 import { CreateUserDto } from './dtos/user.dtos';
@@ -18,8 +18,20 @@ export class AppService {
     return this.users;
   }
 
-  getTweets() {
-    return this.tweets;
+  getTweets(page: number): Tweet[] {
+    const tweetsPerPage = 15;
+    const startIndex = (page - 1) * tweetsPerPage;
+    const endIndex = startIndex + tweetsPerPage;
+    return this.tweets.slice(startIndex, endIndex);
+  }
+
+
+  getUserTweets(username: string): Tweet[] {
+    const userTweets: Tweet[] = this.tweets.filter((tweet) => {
+      return tweet.getUsername() === username
+    })
+
+    return userTweets;
   }
 
   createUser(body: CreateUserDto) {
@@ -31,14 +43,14 @@ export class AppService {
     const user = this.findUserByUsername(username);
 
     if (!user) {
-      throw new UnauthorizedException('Você precisa estar logado para publicar um tweet.');
+      throw new HttpException('Você precisa estar logado para publicar um tweet.', HttpStatus.UNAUTHORIZED);
     }
 
-    const newTweet = new Tweet(user, tweet);
+    const newTweet = new Tweet(username, user.getAvatar(), tweet);
     this.tweets.push(newTweet);
   }
 
-  private findUserByUsername(username: string): User | undefined {
-    return this.users.find((user) => user['username'] === username);
+  private findUserByUsername(username: string): User {
+    return this.users.find((user) => user.getUsername() === username);
   }
 }

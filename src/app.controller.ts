@@ -1,8 +1,7 @@
-import { Body, Controller, Get, Headers, HttpCode, HttpException, HttpStatus, Param, Post, Res, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, HttpException, HttpStatus, Param, Post, Query, Res, UnauthorizedException } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CreateUserDto } from './dtos/user.dtos';
 import { CreateTweetDto } from './dtos/tweet.dtos';
-import { Response } from 'express';
 
 @Controller()
 export class AppController {
@@ -19,15 +18,19 @@ export class AppController {
     return this.appService.getUsers();
   }
 
-  @Get("tweets")
-  getTweets() {
-    return this.appService.getTweets();
+  @Get("/tweets")
+  getTweets(@Query('page') page: number = 1) {
+    if (isNaN(page) || page < 1) {
+      throw new HttpException('Informe um número de página válido', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.appService.getTweets(page);
   }
+
 
   @Get("/tweets/:username")
   findOne(@Param("username") username: string) {
-    console.log(username);
-    return username;
+    return this.appService.getUserTweets(username)
   }
 
   @Post("sign-up")
@@ -44,19 +47,15 @@ export class AppController {
   }
 
   @Post("tweets")
-  @HttpCode(200)
   createTweet(@Body() body: CreateTweetDto) {
     try {
-      if (body.user === '') {
-        throw new HttpException('Usuário não logado', HttpStatus.UNAUTHORIZED)
-      }
-      const username = body.user;
+      const username = body.username;
       const tweet = body.tweet;
 
       this.appService.createTweet(username, tweet);
       return 'Tweet criado com sucesso!';
     } catch (error) {
-      throw new HttpException('Falha ao criar o tweet', HttpStatus.BAD_REQUEST);
+      throw error;
     }
   }
 }

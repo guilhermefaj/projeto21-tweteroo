@@ -10,4 +10,8 @@ export class User {
     getUsername(): string {
         return this.username;
     }
+
+    getAvatar(): string {
+        return this.avatar;
+    }
 }
